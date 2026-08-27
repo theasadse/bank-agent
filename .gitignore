@@ -1,0 +1,73 @@
+# ========================
+# Python
+# ========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# ========================
+# Virtual Environments
+# ========================
+venv/
+.venv/
+env/
+.env/
+
+# ========================
+# Environment Variables
+# ========================
+.env
+*.env
+!.env.example
+
+# ========================
+# IDE & Editors
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# ========================
+# OS Files
+# ========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ========================
+# Project Data (runtime-generated)
+# ========================
+data/chroma_db/
+data/uploads/
+backend/sample_data/*.pdf
+
+# ========================
+# Logs
+# ========================
+*.log
+logs/
+
+# ========================
+# Testing & Coverage
+# ========================
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# ========================
+# Misc
+# ========================
+*.bak
+*.tmp
+.agents/
