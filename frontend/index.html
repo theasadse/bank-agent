@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bank SOC AI — Intelligent Schedule of Charges & Fee Assistant</title>
+  <meta name="description" content="100% Free Stack AI Banking SOC Assistant powered by Docling, FastEmbed, ChromaDB, and Ollama/Groq." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header Navigation -->
+    <header class="top-nav">
+      <div class="nav-left">
+        <div class="brand-logo">
+          <div class="logo-icon">
+            <i class="fa-solid fa-building-columns"></i>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">BANK <span class="brand-highlight">SOC ASSISTANT</span></span>
+            <span class="brand-tagline">AI-Powered Schedule of Charges & Fee Guide</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-center">
+        <div class="tab-pill-group">
+          <button class="nav-tab active" data-target="tab-chat" id="nav-chat-btn">
+            <i class="fa-solid fa-comments"></i> Fee Assistant
+          </button>
+          <button class="nav-tab" data-target="tab-compare" id="nav-compare-btn">
+            <i class="fa-solid fa-code-compare"></i> Compare Cards & Accounts
+          </button>
+          <button class="nav-tab" data-target="tab-calculator" id="nav-calculator-btn">
+            <i class="fa-solid fa-calculator"></i> Tax & Surcharge Calculator
+          </button>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <select id="quick-provider-select" class="quick-provider-select" title="Select active AI Provider">
+          <option value="auto">⚡ Auto (Groq / Ollama)</option>
+          <option value="groq">🚀 Groq Cloud (Free / Ultra-Fast)</option>
+          <option value="gemini">✨ Google Gemini</option>
+          <option value="ollama">💻 Ollama (Local llama3.2)</option>
+        </select>
+        <div class="provider-badge" id="provider-status-badge">
+          <span class="pulse-dot"></span>
+          <span id="active-provider-label">AI Engine Ready</span>
+        </div>
+        <button class="btn-icon" id="open-settings-btn" title="Settings & Knowledge Base">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- TAB 1: AI CHAT ASSISTANT -->
+      <section class="tab-pane active" id="tab-chat">
+        <div class="chat-layout">
+          <!-- Chat Sidebar: Quick Queries & Stats -->
+          <aside class="chat-sidebar">
+            <div class="sidebar-card">
+              <div class="sidebar-header">
+                <h3><i class="fa-solid fa-bolt text-amber"></i> Quick SOC Inquiries</h3>
+                <span class="badge-subtle">1-Click</span>
+              </div>
+              <div class="quick-prompts-list">
+                <button class="prompt-chip" data-prompt="What is the annual fee of Gold vs Platinum Debit card, and are there any footnote waiver conditions?">
+                  <i class="fa-solid fa-credit-card"></i>
+                  <span>Gold vs Platinum Debit Fee & Waivers</span>
+                </button>
+                <button class="prompt-chip" data-prompt="What are the charges for 1Link interbank ATM cash withdrawal and balance inquiry?">
+                  <i class="fa-solid fa-money-bill-transfer"></i>
+                  <span>1Link ATM Cash Withdrawal Charges</span>
+                </button>
+                <button class="prompt-chip" data-prompt="Explain the Interbank Fund Transfer (IBFT) free limit and fee calculation above threshold.">
+                  <i class="fa-solid fa-paper-plane"></i>
+                  <span>IBFT Free Limits & Surcharges</span>
+                </button>
+                <button class="prompt-chip" data-prompt="How much does a 50-leaf cheque book cost and does 16% FED apply?">
+                  <i class="fa-solid fa-money-check"></i>
+                  <span>Cheque Book Cost & FED Tax</span>
+                </button>
+                <button class="prompt-chip" data-prompt="What are Safe Deposit Locker sizes, annual rentals, and refundable key deposits?">
+                  <i class="fa-solid fa-vault"></i>
+                  <span>Safe Deposit Locker Rentals & Deposit</span>
+                </button>
+                <button class="prompt-chip" data-prompt="What is the withholding tax rate for Non-Filers on cash withdrawals exceeding $200 (PKR 50,000) under Section 231A?">
+                  <i class="fa-solid fa-scale-balanced"></i>
+                  <span>Non-Filer Cash Withdrawal Tax (231A)</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="sidebar-card doc-context-card">
+              <div class="sidebar-header">
+                <h3><i class="fa-solid fa-book-bookmark text-emerald"></i> Official Bank Schedule</h3>
+                <span class="status-tag" id="sidebar-doc-count">Active</span>
+              </div>
+              <div class="doc-summary-mini" id="sidebar-doc-summary">
+                <div class="doc-icon"><i class="fa-solid fa-file-pdf"></i></div>
+                <div class="doc-meta">
+                  <div class="doc-name" id="sidebar-doc-name">Official Bank SOC PDF</div>
+                  <div class="doc-sub" id="sidebar-doc-stats">Verified Tariff & Taxation Guidelines</div>
+                </div>
+              </div>
+              <div class="engine-features-grid">
+                <div class="feature-tag"><i class="fa-solid fa-check text-emerald"></i> Table & Fee Lookup</div>
+                <div class="feature-tag"><i class="fa-solid fa-check text-emerald"></i> Footnote Waivers</div>
+                <div class="feature-tag"><i class="fa-solid fa-check text-emerald"></i> FED / PST Tax Rules</div>
+                <div class="feature-tag"><i class="fa-solid fa-check text-emerald"></i> Verified Citations</div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Chat Conversation Container -->
+          <div class="chat-main-panel">
+            <div class="chat-messages-scroll" id="chat-messages-container">
+              <!-- Welcome Message -->
+              <div class="message-row assistant">
+                <div class="avatar-box">
+                  <i class="fa-solid fa-building-columns"></i>
+                </div>
+                <div class="message-bubble">
+                  <div class="bubble-header">
+                    <span class="sender-name">Bank SOC AI Assistant</span>
+                    <span class="provider-pill">Official Tariff Guide</span>
+                  </div>
+                  <div class="bubble-content markdown-body">
+                    <p>Welcome! I am your <strong>Bank Schedule of Charges (SOC) & Fee Assistant</strong>. Ask me anything about card charges, account maintenance, transfer fees, or tax rules.</p>
+                    <ul>
+                      <li>💳 <strong>Debit & Credit Cards</strong>: Annual fees, replacement charges, ATM withdrawal & POS limits.</li>
+                      <li>💸 <strong>Fund Transfers & IBFT</strong>: Free monthly limits, charges, and Raast transfers.</li>
+                      <li>⚖️ <strong>Waiver Rules & Footnotes</strong>: Balance thresholds and spend criteria that waive annual fees.</li>
+                      <li>🧾 <strong>Tax & FED Breakdown</strong>: Provincial sales tax / FED (16%) and filer vs non-filer withholding tax.</li>
+                    </ul>
+                    <p class="text-muted">Type your banking question below or click any topic on the left to begin.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chat Input Bar -->
+            <div class="chat-input-wrapper">
+              <form id="chat-form" class="chat-input-form">
+                <div class="input-container">
+                  <input
+                    type="text"
+                    id="chat-input"
+                    placeholder="Ask about debit card fees, ATM limits, IBFT charges, tax rules, or fee waiver conditions..."
+                    autocomplete="off"
+                    required
+                  />
+                  <div class="input-actions">
+                    <button type="button" class="btn-clear" id="chat-clear-btn" title="Clear chat history">
+                      <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                    <button type="submit" class="btn-send" id="chat-send-btn">
+                      <span>Send Query</span>
+                      <i class="fa-solid fa-arrow-up"></i>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: VARIANT COMPARATOR -->
+      <section class="tab-pane" id="tab-compare">
+        <div class="compare-container">
+          <div class="section-intro">
+            <div class="intro-badge"><i class="fa-solid fa-scale-balanced"></i> Side-by-Side Matrix</div>
+            <h2>Card & Account Variant Comparator</h2>
+            <p>Generate instant multi-attribute comparative matrices across banking products with exact limits, replacement fees, foreign markup, and waiver conditions.</p>
+          </div>
+
+          <div class="compare-controls-bar">
+            <div class="preset-selector">
+              <label>Select Product Category:</label>
+              <div class="preset-buttons">
+                <button class="preset-btn active" data-category="debit_cards" data-items="VISA Classic Debit Card, VISA Gold / Pehchaan Debit Card, VISA Platinum Debit Card, VISA Signature Debit Card, PayPak Classic Debit Card">
+                  <i class="fa-solid fa-credit-card"></i> Debit Cards (5 Tiers)
+                </button>
+                <button class="preset-btn" data-category="accounts" data-items="Bank Alfalah Current Account, Bank Alfalah Asaan Account, Bank Alfalah Pehchaan Account, Bank Alfalah Premier Account, Roshan Digital Account">
+                  <i class="fa-solid fa-building-columns"></i> Deposit Accounts (5 Tiers)
+                </button>
+                <button class="preset-btn" data-category="lockers" data-items="Safe Deposit Locker (Small), Safe Deposit Locker (Medium), Safe Deposit Locker (Large)">
+                  <i class="fa-solid fa-vault"></i> Safe Deposit Lockers
+                </button>
+                <button class="preset-btn" data-category="fund_transfers" data-items="Own Bank ATM Cash Withdrawal, 1Link Interbank ATM Cash Withdrawal, Mobile App IBFT, Raast Instant P2P">
+                  <i class="fa-solid fa-money-bill-transfer"></i> Fund Transfer Rails
+                </button>
+              </div>
+            </div>
+            <button class="btn-primary" id="run-compare-btn">
+              <i class="fa-solid fa-arrows-split-up-and-left"></i> Run Comparison
+            </button>
+          </div>
+
+          <div id="compare-result-area" class="compare-result-wrapper">
+            <div class="empty-state">
+              <i class="fa-solid fa-chart-column"></i>
+              <p>Select a category above and click <strong>Run Comparison</strong> to generate the live side-by-side SOC matrix in PKR (Rs.).</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: TAX & SURCHARGE CALCULATOR -->
+      <section class="tab-pane" id="tab-calculator">
+        <div class="calculator-container">
+          <div class="section-intro">
+            <div class="intro-badge"><i class="fa-solid fa-calculator"></i> Plain Math Breakdown</div>
+            <h2>Banking Fee & Statutory Tax Calculator</h2>
+            <p>Compute total customer deduction by combining base fees with Federal Excise Duty (FED / Provincial Sales Tax), Withholding Tax (WHT), and international cross-border surcharges in Pakistani Rupees (Rs.).</p>
+          </div>
+
+          <div class="calc-grid">
+            <!-- Calc Form -->
+            <div class="calc-card form-side">
+              <h3><i class="fa-solid fa-sliders text-cyan"></i> Transaction Parameters</h3>
+              
+              <div class="form-group">
+                <label>Quick Preset Service:</label>
+                <select id="calc-preset-select" class="form-control">
+                  <option value="custom">-- Custom Manual Entry --</option>
+                  <option value="classic_card" data-fee="3800.00" data-name="VISA Classic Debit Card Annual Fee" data-fed="16.0">VISA Classic Debit Card Annual Fee (Rs. 3,800)</option>
+                  <option value="gold_card" data-fee="5500.00" data-name="VISA Gold / Pehchaan Debit Card Annual Fee" data-fed="16.0">VISA Gold / Pehchaan Card Annual Fee (Rs. 5,500)</option>
+                  <option value="platinum_card" data-fee="8500.00" data-name="VISA Platinum Debit Card Annual Fee" data-fed="16.0">VISA Platinum Debit Card Annual Fee (Rs. 8,500)</option>
+                  <option value="signature_card" data-fee="23000.00" data-name="VISA Signature Debit Card Annual Fee" data-fed="16.0">VISA Signature Debit Card Annual Fee (Rs. 23,000)</option>
+                  <option value="paypak_card" data-fee="3000.00" data-name="PayPak Debit Card Annual Fee" data-fed="16.0">PayPak Debit Card Annual Fee (Rs. 3,000)</option>
+                  <option value="small_locker" data-fee="8000.00" data-name="Small Safe Deposit Locker Annual Rent" data-fed="16.0">Small Safe Deposit Locker Rent (Rs. 8,000)</option>
+                  <option value="med_locker" data-fee="12000.00" data-name="Medium Safe Deposit Locker Annual Rent" data-fed="16.0">Medium Safe Deposit Locker Rent (Rs. 12,000)</option>
+                  <option value="banker_cheque" data-fee="1200.00" data-name="Banker's Cheque / Pay Order Issuance" data-fed="16.0">Banker's Cheque / Pay Order (Rs. 1,200)</option>
+                  <option value="atm_1link" data-fee="23.44" data-name="1Link Interbank ATM Cash Withdrawal" data-fed="0.0">1Link Interbank ATM Cash Withdrawal (Rs. 23.44)</option>
+                  <option value="intl_tx" data-fee="0.0" data-amount="100000.0" data-markup="3.5" data-fed="16.0" data-name="International Card POS Transaction (Rs. 100,000 @ 3.5% Markup)">International POS Tx (Rs. 100,000 @ 3.5% Markup)</option>
+                  <option value="cash_wht" data-fee="0.0" data-amount="60000.0" data-wht="0.6" data-name="Cash Withdrawal Rs. 60,000 (Non-Filer Sec 231A 0.6% WHT)">Cash Withdrawal Rs. 60,000 (Non-Filer WHT 0.6%)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="calc-service-name">Service / Fee Description:</label>
+                <input type="text" id="calc-service-name" class="form-control" value="VISA Gold / Pehchaan Debit Card Annual Fee" />
+              </div>
+
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label for="calc-base-fee">Base Fee Amount (Rs. / PKR):</label>
+                  <input type="number" id="calc-base-fee" class="form-control" value="5500.00" step="1" min="0" />
+                </div>
+                <div class="form-group">
+                  <label for="calc-tx-amount">Transaction Volume (Rs. / PKR):</label>
+                  <input type="number" id="calc-tx-amount" class="form-control" value="0.00" step="100" min="0" placeholder="Optional for markup/WHT" />
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label for="calc-fed-rate">FED / Sales Tax Rate (%):</label>
+                  <div class="input-with-suffix">
+                    <input type="number" id="calc-fed-rate" class="form-control" value="16.0" step="0.5" min="0" max="30" />
+                    <span class="suffix">%</span>
+                  </div>
+                  <small class="helper-text">Standard FED is 16.0% (Sindh PST 13.0%, Punjab/Fed 16.0%)</small>
+                </div>
+                <div class="form-group">
+                  <label for="calc-intl-rate">International Markup (%):</label>
+                  <div class="input-with-suffix">
+                    <input type="number" id="calc-intl-rate" class="form-control" value="0.0" step="0.5" min="0" max="10" />
+                    <span class="suffix">%</span>
+                  </div>
+                  <small class="helper-text">Applies on foreign currency cross-border settlements (3.5%)</small>
+                </div>
+              </div>
+
+              <div class="form-group toggle-group">
+                <label>Tax Filer Status (Sec 231A/236P/236Y):</label>
+                <div class="segmented-control">
+                  <button type="button" class="segment-btn active" id="filer-btn-true" data-filer="true">
+                    <i class="fa-solid fa-circle-check"></i> Active Filer (0% / 5% Tax)
+                  </button>
+                  <button type="button" class="segment-btn" id="filer-btn-false" data-filer="false">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Non-Filer (0.6% / 10% Tax)
+                  </button>
+                </div>
+              </div>
+
+              <button type="button" class="btn-primary w-full" id="calc-submit-btn">
+                <i class="fa-solid fa-calculator"></i> Calculate Exact Fee & Tax
+              </button>
+            </div>
+
+            <!-- Calc Output Receipt -->
+            <div class="calc-card receipt-side">
+              <h3><i class="fa-solid fa-receipt text-emerald"></i> Billing & Deduction Statement</h3>
+              <div id="calc-result-box" class="receipt-container">
+                <div class="receipt-header">
+                  <div class="receipt-bank">SCHEDULE OF CHARGES STATEMENT</div>
+                  <div class="receipt-title" id="receipt-service-title">VISA Gold / Pehchaan Debit Card Annual Fee</div>
+                </div>
+
+                <div class="receipt-divider"></div>
+
+                <div class="receipt-line">
+                  <span>1. Base Service Tariff</span>
+                  <span class="val" id="receipt-base-val">Rs. 5,500.00</span>
+                </div>
+                <div class="receipt-line">
+                  <span>2. Federal Excise Duty (16.0% FED)</span>
+                  <span class="val text-amber" id="receipt-fed-val">+Rs. 880.00</span>
+                </div>
+                <div class="receipt-line" id="receipt-intl-row" style="display: none;">
+                  <span>3. Foreign Currency Markup</span>
+                  <span class="val text-indigo" id="receipt-intl-val">+Rs. 0.00</span>
+                </div>
+                <div class="receipt-line" id="receipt-wht-row" style="display: none;">
+                  <span>4. Statutory Withholding Tax (WHT)</span>
+                  <span class="val text-rose" id="receipt-wht-val">+Rs. 0.00</span>
+                </div>
+
+                <div class="receipt-divider double"></div>
+
+                <div class="receipt-total-row">
+                  <span>Total Deducted from Account:</span>
+                  <span class="total-amount" id="receipt-total-val">Rs. 6,380.00</span>
+                </div>
+
+                <div class="receipt-steps-card">
+                  <h4><i class="fa-solid fa-list-check"></i> Plain Math Step Breakdown:</h4>
+                  <ul id="receipt-steps-list">
+                    <li>1. Base Service Fee: Rs. 5,500.00</li>
+                    <li>2. Provincial Sales Tax / FED (16.0%): (16/100) × Rs. 5,500.00 = Rs. 880.00</li>
+                    <li>3. Total Customer Deduction: Rs. 5,500.00 + Rs. 880.00 = Rs. 6,380.00</li>
+                  </ul>
+                </div>
+
+                <div class="statutory-note" id="receipt-statutory-note">
+                  <i class="fa-solid fa-circle-info"></i>
+                  <span>Statutory Notice: FED/Sales Tax of 16% is levied by tax authorities and is non-refundable by the bank.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- SETTINGS & KNOWLEDGE BASE MODAL -->
+    <div class="modal-overlay" id="settings-modal" style="display: none;">
+      <div class="modal-card modal-lg">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-sliders text-cyan"></i> Assistant Settings & Knowledge Base</h3>
+          <button class="modal-close-btn" id="close-settings-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <!-- Document Knowledge Base Section -->
+          <div class="settings-section">
+            <h4 style="font-family: var(--font-heading); color: var(--text-primary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-file-pdf text-emerald"></i> Bank Schedule of Charges Documents
+            </h4>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.85rem;">
+              You can drop your official bank PDF (e.g. Allied Bank, Bank Alfalah, HBL, Meezan) into <code>backend/sample_data/</code> or upload it here.
+            </p>
+            
+            <div class="drop-zone" id="pdf-drop-zone" style="padding: 1.25rem; margin-bottom: 0.75rem;">
+              <input type="file" id="pdf-file-input" accept=".pdf" style="display: none;" />
+              <i class="fa-solid fa-file-arrow-up drop-icon" style="font-size: 1.8rem; margin-bottom: 4px;"></i>
+              <h4 style="font-size: 0.9rem;">Upload Custom Bank SOC PDF</h4>
+              <p style="font-size: 0.78rem;">Drag & drop or <button type="button" class="btn-link" id="browse-pdf-btn">browse file</button></p>
+              <span class="file-chosen-name" id="chosen-file-name">No file selected</span>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 1rem;">
+              <button type="button" class="btn-primary btn-sm" id="upload-pdf-btn" disabled>
+                <i class="fa-solid fa-gear"></i> Ingest & Index PDF
+              </button>
+              <button type="button" class="btn-secondary btn-sm" id="reset-sample-btn">
+                <i class="fa-solid fa-rotate"></i> Re-Scan <code>sample_data/</code>
+              </button>
+            </div>
+
+            <div class="progress-container" id="upload-progress-box" style="display: none;">
+              <div class="progress-bar-bg"><div class="progress-bar-fill" id="upload-progress-fill"></div></div>
+              <div class="progress-status-text" id="upload-progress-status">Parsing PDF & generating embeddings...</div>
+            </div>
+
+            <div class="doc-items-list" id="indexed-docs-list" style="max-height: 140px; margin-bottom: 1.25rem;"></div>
+          </div>
+
+          <div class="receipt-divider" style="margin: 1.25rem 0;"></div>
+
+          <!-- LLM Provider Options -->
+          <div class="settings-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h4 style="font-family: var(--font-heading); color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin: 0;">
+                <i class="fa-solid fa-brain text-cyan"></i> AI Inference Provider
+              </h4>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">
+                Ollama Status: <span id="modal-ollama-status" class="badge-subtle">Checking...</span>
+              </div>
+            </div>
+
+            <div class="provider-radio-group">
+              <label class="provider-radio">
+                <input type="radio" name="provider-choice" value="auto" checked />
+                <div class="radio-box">
+                  <strong><i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Switch (Recommended)</strong>
+                  <span>Uses Groq when key is provided, otherwise 100% local Ollama (llama3.2).</span>
+                </div>
+              </label>
+
+              <label class="provider-radio">
+                <input type="radio" name="provider-choice" value="groq" />
+                <div class="radio-box">
+                  <strong><i class="fa-solid fa-bolt text-amber"></i> Groq Cloud (Free Tier)</strong>
+                  <span>Ultra-fast cloud inference (GPT-OSS 120B / Qwen 27B).</span>
+                </div>
+              </label>
+
+              <label class="provider-radio">
+                <input type="radio" name="provider-choice" value="gemini" />
+                <div class="radio-box">
+                  <strong><i class="fa-solid fa-sparkles text-indigo"></i> Google Gemini Free API</strong>
+                  <span>Google DeepMind Flash model (gemini-1.5-flash).</span>
+                </div>
+              </label>
+
+              <label class="provider-radio">
+                <input type="radio" name="provider-choice" value="ollama" />
+                <div class="radio-box">
+                  <strong><i class="fa-solid fa-laptop-code text-emerald"></i> Ollama (100% Local & Offline)</strong>
+                  <span>Runs on your machine via <code>llama3.2</code> (Requires <code>ollama serve</code>).</span>
+                </div>
+              </label>
+            </div>
+
+            <div class="form-group" id="groq-key-group" style="margin-top: 0.75rem;">
+              <label for="groq-api-key-input">Groq API Key (Included or custom):</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-key"></i>
+                <input type="password" id="groq-api-key-input" class="form-control" placeholder="gsk_..." />
+              </div>
+            </div>
+
+            <div class="form-group" id="gemini-key-group" style="margin-top: 0.75rem;">
+              <label for="gemini-api-key-input">Google Gemini API Key (Optional):</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-key"></i>
+                <input type="password" id="gemini-api-key-input" class="form-control" placeholder="AIzaSy..." />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-primary" id="save-settings-btn">
+            <i class="fa-solid fa-check"></i> Save & Apply
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CITATION MODAL -->
+    <div class="modal-overlay" id="citation-modal" style="display: none;">
+      <div class="modal-card modal-lg">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-file-lines text-emerald"></i> Official SOC Document Citation</h3>
+          <button class="modal-close-btn" id="close-citation-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="citation-meta-banner">
+            <div class="meta-item">
+              <label>Document:</label>
+              <span id="cit-modal-doc">Apex_International_Bank_SOC_2025.pdf</span>
+            </div>
+            <div class="meta-item">
+              <label>Page Number:</label>
+              <span id="cit-modal-page" class="badge-pill">Page 2</span>
+            </div>
+            <div class="meta-item">
+              <label>Section:</label>
+              <span id="cit-modal-section">SECTION 2: DEBIT CARDS</span>
+            </div>
+            <div class="meta-item">
+              <label>Similarity Score:</label>
+              <span id="cit-modal-score" class="badge-pill text-cyan">0.82</span>
+            </div>
+          </div>
+
+          <div class="citation-content-box">
+            <h4>Extracted Tariff & Footnote Context:</h4>
+            <pre id="cit-modal-snippet" class="citation-snippet-code"></pre>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="dismiss-citation-btn">Close Citation</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
