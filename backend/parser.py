@@ -101,8 +101,9 @@ class BankSOCParser:
             has_tables = "|" in sec_text and "---" in sec_text
             footnotes = self._extract_footnotes(sec_text)
 
+            enriched_text = f"[Document: {doc_name} | Section: {section_title} | Category: {category.replace('_', ' ').title()} | Page: {max(1, (idx // 2) + 1)}]\n{sec_text}"
             chunk = ParsedChunk(
-                text=sec_text,
+                text=enriched_text,
                 document_name=doc_name,
                 page_number=max(1, (idx // 2) + 1),
                 section_title=section_title,
@@ -159,11 +160,12 @@ class BankSOCParser:
                     for fn in page_footnotes:
                         page_content_parts.append(f"- {fn}")
 
-                full_page_text = "\n".join(page_content_parts).strip()
-                category = self._infer_category(full_page_text)
+                raw_page_text = "\n".join(page_content_parts).strip()
+                category = self._infer_category(raw_page_text)
+                enriched_page_text = f"[Document: {doc_name} | Section: {current_section} | Category: {category.replace('_', ' ').title()} | Page: {page_num}]\n{raw_page_text}"
 
                 chunk = ParsedChunk(
-                    text=full_page_text,
+                    text=enriched_page_text,
                     document_name=doc_name,
                     page_number=page_num,
                     section_title=current_section,

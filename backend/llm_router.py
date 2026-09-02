@@ -122,7 +122,7 @@ class LLMRouter:
         provider: Optional[str] = "auto",
         model_name: Optional[str] = None,
         api_key: Optional[str] = None,
-        temperature: float = 0.1
+        temperature: float = 0.0
     ) -> Dict[str, Any]:
         """
         Generate completion using selected or auto-routed provider with automatic model fallbacks.
@@ -154,7 +154,7 @@ class LLMRouter:
         provider: Optional[str] = "auto",
         model_name: Optional[str] = None,
         api_key: Optional[str] = None,
-        temperature: float = 0.1
+        temperature: float = 0.0
     ) -> AsyncGenerator[str, None]:
         """
         Stream tokens directly to client via async generator with fallback resilience.

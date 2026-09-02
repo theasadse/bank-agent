@@ -19,15 +19,28 @@ logger = logging.getLogger("bank_soc.rag_engine")
 logging.basicConfig(level=logging.INFO)
 
 SYSTEM_PROMPT_SOC = """You are an expert Bank Schedule of Charges (SOC) & Compliance AI Assistant.
-Your mission is to provide accurate, transparent, and fully-cited fee schedules, account rules, card charges, limits, taxes, and waiver conditions directly from the bank's official Schedule of Charges documents.
+Your mission is to provide accurate, transparent, and fully-grounded fee schedules, account rules, card charges, limits, taxes, and waiver conditions directly from the bank's official Schedule of Charges documents.
 
-CRITICAL INSTRUCTIONS:
-1. ACCURACY & NUMERICAL PRECISION: State exact fee amounts, currencies, percentages, and limits found in the document.
-2. CURRENCY RULE: All domestic bank charges are in Pakistani Rupees (Rs. / PKR). NEVER use dollar signs ($) unless the document explicitly discusses a Foreign Currency (FCY/USD) account.
-3. TABLE & FOOTNOTE UNDERSTANDING: Always inspect and correlate table rows with relevant footnotes (marked with *, **, 1, 2, †, #, Note:, Waiver Condition). If a waiver, threshold, or conditional rule exists (e.g. "Fee waived if monthly balance > Rs. 50,000" or "FED/sales tax applies"), you MUST highlight it clearly.
-4. TAX & FED TRANSPARENCY: Clarify whether a quoted fee is base fee or subject to Federal Excise Duty (FED) / Provincial Sales Tax / Withholding Tax (WHT).
-5. CITATIONS & AUDITABILITY: At the end of relevant points or answers, explicitly state the source document name, page number, and section name (e.g. `[Page 12: Section 5 - Debit Cards]`).
-6. STRUCTURED FORMAT: Use clean Markdown tables, bold headers, and bullet points for readability.
+4-STAGE CHAIN-OF-THOUGHT INSTRUCTIONS:
+1. EXACT EXTRACTION & NUMERICAL PRECISION:
+   - Extract exact fee amounts, currencies, percentages, and daily transaction limits found in the document.
+   - CURRENCY RULE: All domestic bank charges MUST be stated in Pakistani Rupees (Rs. / PKR). NEVER use dollar signs ($) unless the document explicitly discusses a Foreign Currency (FCY/USD) account.
+
+2. CONDITIONAL WAIVERS & FOOTNOTES CORRELATION:
+   - Carefully inspect and correlate table rows with relevant footnotes (*, **, 1, 2, †, #, Note:, Waiver Condition).
+   - If a fee is waived under specific conditions (e.g. "Fee waived if monthly average balance > Rs. 50,000", "Annual fee waived on spend > Rs. 100,000", or "Free for Premier / Corporate accounts"), you MUST highlight it explicitly under a "Waiver & Exemption" bullet.
+
+3. STATUTORY TAX & SURCHARGE TRANSPARENCY:
+   - Clarify whether a quoted fee is base amount or subject to 16% Federal Excise Duty (FED) / Provincial Sales Tax (PST) / Withholding Tax (WHT).
+   - Distinguish Filer vs Non-Filer tax rules where applicable.
+
+4. STRICT ZERO-HALLUCINATION GUARDRAIL:
+   - Answer ONLY using the facts present in the CONTEXT below.
+   - If a specific fee, service, or rule is NOT mentioned in the provided context, state clearly: "This fee/service is not specified in the current Schedule of Charges document." NEVER guess, estimate, or assume standard banking practices.
+
+5. AUDITABLE CITATIONS & STRUCTURED FORMAT:
+   - Use clean Markdown tables, bold headers, and bullet points for readability.
+   - At the end of relevant points or answers, explicitly state the source document name, page number, and section name (e.g. `[Page 12: Section 5 - Debit Cards]`).
 
 CONTEXT FROM OFFICIAL SCHEDULE OF CHARGES DOCUMENTS:
 ---------------------
@@ -94,21 +107,82 @@ Return ONLY the JSON object without markdown fences or extra commentary.
 
 class BankSOCRAGEngine:
     """
-    RAG Engine specializing in Bank Schedule of Charges (SOC) analysis.
+    RAG Engine specializing in Bank Schedule of Charges (SOC) analysis,
+    featuring Contextual Multi-Turn Query Rewriting, Hybrid Retrieval, and Grounded Inference.
     """
 
     def __init__(self, vector_store: BankSOCVectorStore, llm_router: LLMRouter):
         self.vector_store = vector_store
         self.llm_router = llm_router
 
+    async def rewrite_query_for_context(self, req: ChatRequest) -> str:
+        """
+        Rewrites conversational follow-up queries containing pronouns ('it', 'that card', 'annual fee')
+        into explicit, standalone banking queries using conversation history.
+        """
+        if not req.history or len(req.history) == 0:
+            return req.query
+
+        query_text = req.query.strip()
+        pronoun_triggers = [
+            "it", "this", "that", "these", "those", "same", "its", "what about",
+            "how about", "and for", "also", "annual fee", "issuance fee",
+            "withdrawal limit", "pos limit", "replacement fee", "is it free"
+        ]
+        is_context_dependent = (
+            any(re.search(rf"\b{re.escape(t)}\b", query_text, re.IGNORECASE) for t in pronoun_triggers)
+            or len(query_text.split()) <= 5
+        )
+
+        if not is_context_dependent:
+            return req.query
+
+        history_snippets = []
+        for h in req.history[-3:]:
+            history_snippets.append(f"{h.role.title()}: {h.content[:200]}")
+        history_str = "\n".join(history_snippets)
+
+        rewrite_prompt = (
+            "You are a Search Query Normalizer for Bank Schedule of Charges (SOC).\n"
+            "Given the conversation history and a user follow-up question, rewrite the question into a single, standalone search query containing all necessary bank product names, card types, account types, or fee types.\n"
+            "Rules:\n"
+            "1. Output ONLY the rewritten search query. Do NOT add preamble, quotes, or explanation.\n"
+            "2. If the user query is already standalone, return it unchanged.\n\n"
+            f"Conversation History:\n{history_str}\n\n"
+            f"User Follow-up: {query_text}\n"
+            "Standalone Search Query:"
+        )
+
+        try:
+            res = await self.llm_router.generate_response(
+                messages=[{"role": "user", "content": rewrite_prompt}],
+                provider=req.provider,
+                model_name=req.model_name,
+                api_key=req.api_key,
+                temperature=0.0
+            )
+            rewritten = res.get("content", "").strip().strip('"\'')
+            if rewritten and len(rewritten) > 2 and len(rewritten) < 300:
+                logger.info(f"Rewrote query '{query_text}' -> '{rewritten}'")
+                return rewritten
+        except Exception as e:
+            logger.debug(f"Query rewrite skipped/failed: {e}")
+
+        return req.query
+
     async def answer_query(self, req: ChatRequest) -> ChatResponse:
         """
         Execute RAG query against indexed SOC documents with source citations.
         """
+        # Step 1: Contextual Query Resolution
+        effective_search_query = await self.rewrite_query_for_context(req)
+
+        # Step 2: Hybrid Retrieval (Dense Vector + BM25 Sparse Keyword)
         retrieved_docs = self.vector_store.query(
-            query_text=req.query,
+            query_text=effective_search_query,
             n_results=5,
-            document_filter=req.filter_document
+            document_filter=req.filter_document,
+            use_hybrid=True
         )
 
         if not retrieved_docs:
@@ -157,7 +231,8 @@ class BankSOCRAGEngine:
             messages=messages,
             provider=req.provider,
             model_name=req.model_name,
-            api_key=req.api_key
+            api_key=req.api_key,
+            temperature=0.0
         )
 
         answer_text = res.get("content", "")
@@ -165,7 +240,7 @@ class BankSOCRAGEngine:
         model_used = res.get("model", "unknown")
 
         # Check if answer referenced footnotes
-        has_fn = bool(re.search(r'footnote|waiver|condition|\*|\bFED\b|statutory', answer_text, re.IGNORECASE))
+        has_fn = bool(re.search(r'footnote|waiver|condition|\*|\bFED\b|statutory|exemption', answer_text, re.IGNORECASE))
         
         # Extract any specific footnote bullets mentioned
         fn_details = []
@@ -186,10 +261,15 @@ class BankSOCRAGEngine:
         """
         Stream tokens directly to client with citation metadata preamble/postscript.
         """
+        # Step 1: Contextual Query Resolution
+        effective_search_query = await self.rewrite_query_for_context(req)
+
+        # Step 2: Hybrid Retrieval (Dense Vector + BM25 Sparse Keyword)
         retrieved_docs = self.vector_store.query(
-            query_text=req.query,
+            query_text=effective_search_query,
             n_results=5,
-            document_filter=req.filter_document
+            document_filter=req.filter_document,
+            use_hybrid=True
         )
 
         context_blocks = []
@@ -245,7 +325,8 @@ class BankSOCRAGEngine:
                 messages=messages,
                 provider=req.provider,
                 model_name=req.model_name,
-                api_key=req.api_key
+                api_key=req.api_key,
+                temperature=0.0
             ):
                 token_event = {"type": "token", "content": token}
                 yield f"data: {json.dumps(token_event)}\n\n"
@@ -266,7 +347,11 @@ class BankSOCRAGEngine:
         Generate side-by-side comparison matrix for card or account variants.
         """
         search_query = f"{req.category} fee comparison " + " ".join(req.items)
-        retrieved_docs = self.vector_store.query(query_text=search_query, n_results=6)
+        retrieved_docs = self.vector_store.query(
+            query_text=search_query,
+            n_results=6,
+            use_hybrid=True
+        )
 
         context_blocks = []
         citations = []
@@ -291,10 +376,13 @@ class BankSOCRAGEngine:
             context_blocks.append(f"Source: Page {page_num} ({sec_title}):\n{item['text']}")
 
         context_str = "\n\n".join(context_blocks)
+        sample_values = {it: "Rs. ..." for it in req.items}
         prompt = COMPARISON_PROMPT_TEMPLATE.format(
             category=req.category,
             items=", ".join(req.items),
             items_json=json.dumps(req.items),
+            sample_values_json=json.dumps(sample_values),
+            sample_keys=", ".join([f'"{it}"' for it in req.items]),
             context=context_str
         )
 
@@ -312,11 +400,9 @@ class BankSOCRAGEngine:
         )
 
         raw_content = res.get("content", "").strip()
-        # Clean any code block markers
         clean_json = re.sub(r'^```(json)?\s*', '', raw_content)
         clean_json = re.sub(r'\s*```$', '', clean_json).strip()
 
-        # Try direct or regex JSON extraction
         json_match = re.search(r'(\{[\s\S]*\})', clean_json)
         json_str = json_match.group(1) if json_match else clean_json
 
@@ -333,7 +419,6 @@ class BankSOCRAGEngine:
             )
         except Exception as e:
             logger.warning(f"Failed to parse LLM comparison JSON ({e}), fallback heuristic formatting.")
-            # Build structured fallback directly from retrieved chunks
             extracted_features = []
             extracted_footnotes = []
 
@@ -366,4 +451,5 @@ class BankSOCRAGEngine:
                 recommendation="Premier and Platinum tiers offer higher daily ATM/POS limits and fee waiver eligibility for active spenders.",
                 citations=citations
             )
+
 

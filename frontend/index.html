@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -52,6 +52,9 @@
           <span class="pulse-dot"></span>
           <span id="active-provider-label">AI Engine Ready</span>
         </div>
+        <button class="btn-theme-toggle" id="theme-toggle-btn" title="Toggle Dark / Light Mode" aria-label="Toggle theme">
+          <i class="fa-solid fa-moon" id="theme-toggle-icon"></i>
+        </button>
         <button class="btn-icon" id="open-settings-btn" title="Settings & Knowledge Base">
           <i class="fa-solid fa-gear"></i>
         </button>
@@ -118,7 +121,24 @@
                 <div class="feature-tag"><i class="fa-solid fa-check text-emerald"></i> Verified Citations</div>
               </div>
             </div>
-          </aside>
+
+          <!-- Chat History Panel -->
+          <div class="history-panel-card">
+            <div class="history-panel-header">
+              <h3><i class="fa-solid fa-clock-rotate-left text-indigo"></i> Chat History</h3>
+              <span class="badge-subtle" id="history-count-badge">0 sessions</span>
+            </div>
+            <div class="history-session-list" id="history-session-list">
+              <div class="history-empty-state">No saved sessions yet. Start chatting!</div>
+            </div>
+            <div class="history-actions-bar">
+              <button class="btn-history-new" id="new-session-btn">
+                <i class="fa-solid fa-plus"></i> New Session
+              </button>
+            </div>
+          </div>
+
+        </aside>
 
           <!-- Chat Conversation Container -->
           <div class="chat-main-panel">
@@ -159,6 +179,9 @@
                     required
                   />
                   <div class="input-actions">
+                    <button type="button" class="btn-clear" id="voice-input-btn" title="Voice Input (click to speak)" aria-label="Voice input">
+                      <i class="fa-solid fa-microphone"></i>
+                    </button>
                     <button type="button" class="btn-clear" id="chat-clear-btn" title="Clear chat history">
                       <i class="fa-solid fa-rotate-left"></i>
                     </button>
@@ -347,6 +370,16 @@
                   <i class="fa-solid fa-circle-info"></i>
                   <span>Statutory Notice: FED/Sales Tax of 16% is levied by tax authorities and is non-refundable by the bank.</span>
                 </div>
+
+                <!-- Receipt Export Actions -->
+                <div class="receipt-action-bar">
+                  <button type="button" class="btn-receipt-action" id="receipt-copy-btn">
+                    <i class="fa-solid fa-copy"></i> Copy Statement
+                  </button>
+                  <button type="button" class="btn-receipt-action" id="receipt-download-btn">
+                    <i class="fa-solid fa-image"></i> Save as PNG
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -511,6 +544,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Toast container -->
+  <div id="toast-container"></div>
   <script src="app.js"></script>
 </body>
 </html>
